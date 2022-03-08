@@ -1,0 +1,132 @@
+{
+  "$schema": "https://puremourning.github.io/vimspector/schema/vimspector.schema.json#",
+  "configurations": {
+    "Run this file": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "${file}",
+        "args": []
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    },
+    "Inverted-Pendulum": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "cs285/scripts/run_hw2.py",
+        "args": [
+          "--env_name", "InvertedPendulum-v2",
+          "--ep_len", "1000",
+          "--discount", "0.9",
+          "-n", "100",
+          "-rtg",
+          //"--video_log_freq", "100",
+          "--exp_name", "q2_b50000_lr5-3",
+          "-b", "50000",
+          "-lr", "5e-3"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    },
+    "LunarLander": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "cs285/scripts/run_hw2.py",
+        "args": [
+          "--env_name", "LunarLanderContinuous-v2",
+          "--ep_len", "1000",
+          "--discount", "0.99",
+          "-n", "100",
+          "-rtg",
+          "--nn_baseline",
+          "--gae_lambda", "0.5",
+          //"--video_log_freq", "100",
+          "--exp_name", "q3_b40000_lr5-3",
+          "-b", "40000",
+          "-lr", "5e-3"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    },
+    "Hopper-v2": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "cs285/scripts/run_hw2.py",
+        "args": [
+          "--env_name", "Hopper-v2",
+          "--ep_len", "1000",
+          "--discount", "0.9",
+          "-n", "300",
+          "-rtg",
+          "--nn_baseline",
+          "--action_noise_std", "0.95",
+          "--gae_lambda", "0.9",
+          "--video_log_freq", "100",
+          "--exp_name", "q5_b2000_r0.001_lambda0.9",
+          "-b", "2000",
+          "-lr", "1e-3"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    }
+  }
+}
