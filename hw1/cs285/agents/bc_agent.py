@@ -1,5 +1,6 @@
 from cs285.infrastructure.replay_buffer import ReplayBuffer
 from cs285.policies.MLP_policy import MLPPolicySL
+
 from .base_agent import BaseAgent
 
 
@@ -27,8 +28,7 @@ class BCAgent(BaseAgent):
     def train(self, ob_no, ac_na, re_n, next_ob_no, terminal_n):
         # training a BC agent refers to updating its actor using
         # the given observations and corresponding action labels
-        log = self.actor.update(ob_no, ac_na)  # HW1: you will modify this
-        return log
+        return self.actor.update(ob_no, ac_na)  # HW1: you will modify this
 
     def add_to_replay_buffer(self, paths):
         self.replay_buffer.add_rollouts(paths)

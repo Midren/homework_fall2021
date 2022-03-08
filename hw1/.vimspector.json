@@ -1,0 +1,41 @@
+{
+  "$schema": "https://puremourning.github.io/vimspector/schema/vimspector.schema.json#",
+  "configurations": {
+    "Problem 1": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "cs285/scripts/run_hw1.py",
+        "args": [
+            "--expert_policy_file", "cs285/policies/experts/Ant.pkl",
+            "--env_name", "Ant-v2", "--exp_name", "bc_ant", "--n_iter", "1",
+            "--expert_data", "cs285/expert_data/expert_data_Ant-v2.pkl",
+            "--ep_len", "1000", "--eval_batch_size", "2000",
+            "--train_batch_size", "512",
+            "--no_gpu",
+            "--seed", "42",
+            "-lr", "1e-4",
+            "--num_agent_train_steps_per_iter", "5000",
+            //"--video_log_freq", "-1", 
+            "--size=64", "--n_layers=2"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    }
+  }
+}
+

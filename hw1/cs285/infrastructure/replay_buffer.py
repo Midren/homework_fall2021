@@ -1,7 +1,10 @@
 from cs285.infrastructure.utils import *
 
+import numpy as np
+import typing as t
 
-class ReplayBuffer(object):
+
+class ReplayBuffer:
 
     def __init__(self, max_size=1000000):
 
@@ -11,14 +14,14 @@ class ReplayBuffer(object):
         self.paths = []
 
         # store (concatenated) component arrays from each rollout
-        self.obs = None
-        self.acs = None
-        self.rews = None
-        self.next_obs = None
-        self.terminals = None
+        self.obs: np.ndarray = None
+        self.acs: np.ndarray = None
+        self.rews: np.ndarray = None
+        self.next_obs: np.ndarray = None
+        self.terminals: np.ndarray = None
 
     def __len__(self):
-        if self.obs:
+        if self.obs is not None:
             return self.obs.shape[0]
         else:
             return 0
@@ -72,12 +75,16 @@ class ReplayBuffer(object):
                 == self.terminals.shape[0]
         )
 
-        ## TODO return batch_size number of random entries from each of the 5 component arrays above
-        ## HINT 1: use np.random.permutation to sample random indices
-        ## HINT 2: return corresponding data points from each array (i.e., not different indices from each array)
-        ## HINT 3: look at the sample_recent_data function below
+        idx = np.random.permutation(len(self))[:batch_size]
 
-        return TODO, TODO, TODO, TODO, TODO
+
+        return (
+            self.obs[idx],
+            self.acs[idx],
+            self.rews[idx],
+            self.next_obs[idx],
+            self.terminals[idx],
+        )
 
     def sample_recent_data(self, batch_size=1):
         return (

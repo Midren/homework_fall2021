@@ -1,0 +1,13 @@
+{
+    "$schema": "https://raw.githubusercontent.com/fannheyward/coc-pyright/master/schemas/pyrightconfig.schema.json",
+    "venvPath": "venv/",
+    "executionEnvironments": [
+    {
+      "root": "./",
+      "venv": "./",
+      "extraPaths": [
+        "./3rd-modules"
+      ]
+    }
+  ]
+}
