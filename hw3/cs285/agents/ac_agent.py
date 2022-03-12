@@ -1,16 +1,18 @@
+import numpy as np
 from collections import OrderedDict
 
 from cs285.critics.bootstrapped_continuous_critic import \
     BootstrappedContinuousCritic
 from cs285.infrastructure.replay_buffer import ReplayBuffer
-from cs285.infrastructure.utils import *
+# from cs285.infrastructure.utils import *
 from cs285.policies.MLP_policy import MLPPolicyAC
-from .base_agent import BaseAgent
+
+from cs285.agents.base_agent import BaseAgent
 
 
 class ACAgent(BaseAgent):
     def __init__(self, env, agent_params):
-        super(ACAgent, self).__init__()
+        super().__init__()
 
         self.env = env
         self.agent_params = agent_params
@@ -31,29 +33,26 @@ class ACAgent(BaseAgent):
         self.replay_buffer = ReplayBuffer()
 
     def train(self, ob_no, ac_na, re_n, next_ob_no, terminal_n):
-        # TODO Implement the following pseudocode:
-        # for agent_params['num_critic_updates_per_agent_update'] steps,
-        #     update the critic
+        critic_losses = []
+        for _ in range(self.agent_params['num_critic_updates_per_agent_update']):
+            critic_loss = self.critic.update(ob_no, ac_na, next_ob_no, re_n, terminal_n)
+            critic_losses.append(critic_loss)
 
-        # advantage = estimate_advantage(...)
+        advantages = self.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n)
 
-        # for agent_params['num_actor_updates_per_agent_update'] steps,
-        #     update the actor
+        actor_losses = []
+        for _ in range(self.agent_params['num_actor_updates_per_agent_update']):
+            actor_loss = self.actor.update(ob_no, ac_na, advantages)
+            actor_losses.append(actor_loss)
 
         loss = OrderedDict()
-        loss['Critic_Loss'] = TODO
-        loss['Actor_Loss'] = TODO
+        loss['Critic_Loss'] = critic_losses
+        loss['Actor_Loss'] = actor_losses
 
         return loss
 
     def estimate_advantage(self, ob_no, next_ob_no, re_n, terminal_n):
-        # TODO Implement the following pseudocode:
-        # 1) query the critic with ob_no, to get V(s)
-        # 2) query the critic with next_ob_no, to get V(s')
-        # 3) estimate the Q value as Q(s, a) = r(s, a) + gamma*V(s')
-        # HINT: Remember to cut off the V(s') term (ie set it to 0) at terminal states (ie terminal_n=1)
-        # 4) calculate advantage (adv_n) as A(s, a) = Q(s, a) - V(s)
-        adv_n = TODO
+        adv_n = re_n + (self.gamma*self.critic.forward_np(next_ob_no))*np.logical_not(terminal_n) - self.critic.forward_np(ob_no)
 
         if self.standardize_advantages:
             adv_n = (adv_n - np.mean(adv_n)) / (np.std(adv_n) + 1e-8)

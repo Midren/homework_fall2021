@@ -1,0 +1,87 @@
+{
+  "$schema": "https://puremourning.github.io/vimspector/schema/vimspector.schema.json#",
+  "configurations": {
+    "Run this file": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "${file}",
+        "args": []
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    },
+    "Train LunarLander Dqn": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "cs285/scripts/run_hw3_dqn.py",
+        "args": [
+          "--env_name", "LunarLander-v3",
+          "--video_log_freq", "100",
+          "--double_q",
+          "--exp_name", "q2_test"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    },
+    "Train CartPole Actor-Critic": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "cs285/scripts/run_hw3_actor_critic.py",
+        "args": [
+          "--env_name", "CartPole-v0",
+          "-n", "100",
+          "-b", "1000",
+          "--video_log_freq", "100",
+          "--exp_name", "q4_${Ntu}_${Ngstu}",
+          "-ntu", "${Ntu}",
+          "-ngsptu", "${Ngstu}"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    }
+  }
+}

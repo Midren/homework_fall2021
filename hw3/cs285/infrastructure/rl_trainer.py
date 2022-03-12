@@ -1,31 +1,27 @@
-from collections import OrderedDict
-import pickle
 import os
 import sys
 import time
+from collections import OrderedDict
 
 import gym
-from gym import wrappers
 import numpy as np
 import torch
-from cs285.infrastructure import pytorch_util as ptu
-
-from cs285.infrastructure import utils
-from cs285.infrastructure.logger import Logger
+from tqdm import tqdm
+from gym import wrappers
 
 from cs285.agents.dqn_agent import DQNAgent
-from cs285.infrastructure.dqn_utils import (
-        get_wrapper_by_name,
-        register_custom_envs,
-)
+from cs285.infrastructure import pytorch_util as ptu
+from cs285.infrastructure import utils
+from cs285.infrastructure.dqn_utils import (get_wrapper_by_name,
+                                            register_custom_envs)
+from cs285.infrastructure.logger import Logger
 
 # how many rollouts to save as videos to tensorboard
 MAX_NVIDEO = 2
-MAX_VIDEO_LEN = 40 # we overwrite this in the code below
+MAX_VIDEO_LEN = 40  # we overwrite this in the code below
 
 
-class RL_Trainer(object):
-
+class RL_Trainer:
     def __init__(self, params):
 
         #############
@@ -40,10 +36,7 @@ class RL_Trainer(object):
         seed = self.params['seed']
         np.random.seed(seed)
         torch.manual_seed(seed)
-        ptu.init_gpu(
-            use_gpu=not self.params['no_gpu'],
-            gpu_id=self.params['which_gpu']
-        )
+        ptu.init_gpu(use_gpu=not self.params['no_gpu'], gpu_id=self.params['which_gpu'])
 
         #############
         ## ENV
@@ -76,7 +69,7 @@ class RL_Trainer(object):
         self.env.seed(seed)
 
         # import plotting (locally if 'obstacles' env)
-        if not(self.params['env_name']=='obstacles-cs285-v0'):
+        if not (self.params['env_name'] == 'obstacles-cs285-v0'):
             import matplotlib
             matplotlib.use('Agg')
 
@@ -101,14 +94,13 @@ class RL_Trainer(object):
 
         # simulation timestep, will be used for video saving
         if 'model' in dir(self.env):
-            self.fps = 1/self.env.model.opt.timestep
+            self.fps = 1 / self.env.model.opt.timestep
         elif 'env_wrappers' in self.params:
-            self.fps = 30 # This is not actually used when using the Monitor wrapper
+            self.fps = 30  # This is not actually used when using the Monitor wrapper
         elif 'video.frames_per_second' in self.env.env.metadata.keys():
             self.fps = self.env.env.metadata['video.frames_per_second']
         else:
             self.fps = 10
-
 
         #############
         ## AGENT
@@ -117,9 +109,14 @@ class RL_Trainer(object):
         agent_class = self.params['agent_class']
         self.agent = agent_class(self.env, self.params['agent_params'])
 
-    def run_training_loop(self, n_iter, collect_policy, eval_policy,
-                          initial_expertdata=None, relabel_with_expert=False,
-                          start_relabel_with_expert=1, expert_policy=None):
+    def run_training_loop(self,
+                          n_iter,
+                          collect_policy,
+                          eval_policy,
+                          initial_expertdata=None,
+                          relabel_with_expert=False,
+                          start_relabel_with_expert=1,
+                          expert_policy=None):
         """
         :param n_iter:  number of (dagger) iterations
         :param collect_policy:
@@ -136,9 +133,11 @@ class RL_Trainer(object):
 
         print_period = 1000 if isinstance(self.agent, DQNAgent) else 1
 
+        pbar = tqdm(total=n_iter)
+
         for itr in range(n_iter):
             if itr % print_period == 0:
-                print("\n\n********** Iteration %i ************"%itr)
+                pbar.update(print_period)
 
             # decide if videos should be rendered/logged at this iteration
             if itr % self.params['video_log_freq'] == 0 and self.params['video_log_freq'] != -1:
@@ -163,31 +162,26 @@ class RL_Trainer(object):
                 paths = None
             else:
                 use_batchsize = self.params['batch_size']
-                if itr==0:
+                if itr == 0:
                     use_batchsize = self.params['batch_size_initial']
-                paths, envsteps_this_batch, train_video_paths = (
-                    self.collect_training_trajectories(
-                        itr, initial_expertdata, collect_policy, use_batchsize)
-                )
+                paths, envsteps_this_batch, train_video_paths = (self.collect_training_trajectories(
+                    itr, initial_expertdata, collect_policy, use_batchsize))
 
             self.total_envsteps += envsteps_this_batch
 
             # relabel the collected obs with actions from a provided expert policy
-            if relabel_with_expert and itr>=start_relabel_with_expert:
+            if relabel_with_expert and itr >= start_relabel_with_expert:
                 paths = self.do_relabel_with_expert(expert_policy, paths)
 
             # add collected data to replay buffer
             self.agent.add_to_replay_buffer(paths)
 
             # train agent (using sampled data from replay buffer)
-            if itr % print_period == 0:
-                print("\nTraining agent...")
             all_logs = self.train_agent()
 
             # log/save
             if self.logvideo or self.logmetrics:
                 # perform logging
-                print('\nBeginning logging procedure...')
                 if isinstance(self.agent, DQNAgent):
                     self.perform_dqn_logging(all_logs)
                 else:
@@ -195,27 +189,53 @@ class RL_Trainer(object):
 
                 if self.params['save_params']:
                     self.agent.save('{}/agent_itr_{}.pt'.format(self.params['logdir'], itr))
+        pbar.close()
 
     ####################################
     ####################################
 
-    def collect_training_trajectories(self, itr, initial_expertdata, collect_policy, num_transitions_to_sample, save_expert_data_to_disk=False):
+    def collect_training_trajectories(self,
+                                      itr,
+                                      initial_expertdata,
+                                      collect_policy,
+                                      num_transitions_to_sample,
+                                      save_expert_data_to_disk=False):
         """
         :param itr:
         :param load_initial_expertdata:  path to expert data pkl file
         :param collect_policy:  the current policy using which we collect data
-        :param num_transitions_to_sample:  the number of transitions we collect
+        :param batch_size:  the number of transitions we collect
         :return:
             paths: a list trajectories
             envsteps_this_batch: the sum over the numbers of environment steps in paths
             train_video_paths: paths which also contain videos for visualization purposes
         """
-        # TODO: get this from hw1 or hw2
+        if itr == 0 and initial_expertdata is not None:
+            expert_paths = np.load(initial_expertdata, allow_pickle=True)
+            paths, envsteps_this_batch = expert_paths, 0
+        else:
+            # print("\nCollecting data to be used for training...")
+            paths, envsteps_this_batch = utils.sample_trajectories(self.env, collect_policy, num_transitions_to_sample,
+                                                                   self.params['ep_len'])
+
+        # collect more rollouts with the same policy, to be saved as videos in tensorboard
+        # note: here, we collect MAX_NVIDEO rollouts, each of length MAX_VIDEO_LEN
+        train_video_paths = None
+        if self.logvideo:
+            # print('\nCollecting train rollouts to be used for saving videos...')
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
 
         return paths, envsteps_this_batch, train_video_paths
 
     def train_agent(self):
-        # TODO: get this from hw1 or hw2
+        # print('\nTraining agent using sampled data from replay buffer...')
+        all_logs = []
+        for train_step in range(self.params['num_agent_train_steps_per_iter']):
+            ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = self.agent.sample(
+                self.params['train_batch_size'])
+            train_log = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
+            all_logs.append(train_log)
+        return all_logs
 
     ####################################
     ####################################
@@ -231,17 +251,16 @@ class RL_Trainer(object):
         logs = OrderedDict()
 
         logs["Train_EnvstepsSoFar"] = self.agent.t
-        print("Timestep %d" % (self.agent.t,))
+        # print("Timestep %d" % (self.agent.t, ))
         if self.mean_episode_reward > -5000:
             logs["Train_AverageReturn"] = np.mean(self.mean_episode_reward)
-        print("mean reward (100 episodes) %f" % self.mean_episode_reward)
+        # print("mean reward (100 episodes) %f" % self.mean_episode_reward)
         if self.best_mean_episode_reward > -5000:
             logs["Train_BestReturn"] = np.mean(self.best_mean_episode_reward)
-        print("best mean reward %f" % self.best_mean_episode_reward)
+        # print("best mean reward %f" % self.best_mean_episode_reward)
 
         if self.start_time is not None:
             time_since_start = (time.time() - self.start_time)
-            print("running time %f" % time_since_start)
             logs["TimeSinceStart"] = time_since_start
 
         logs.update(last_log)
@@ -249,9 +268,9 @@ class RL_Trainer(object):
         sys.stdout.flush()
 
         for key, value in logs.items():
-            print('{} : {}'.format(key, value))
+            # print('{} : {}'.format(key, value))
             self.logger.log_scalar(value, key, self.agent.t)
-        print('Done logging...\n\n')
+        # print('Done logging...\n\n')
 
         self.logger.flush()
 
@@ -262,20 +281,28 @@ class RL_Trainer(object):
         #######################
 
         # collect eval trajectories, for logging
-        print("\nCollecting data for eval...")
-        eval_paths, eval_envsteps_this_batch = utils.sample_trajectories(self.env, eval_policy, self.params['eval_batch_size'], self.params['ep_len'])
+        # print("\nCollecting data for eval...")
+        eval_paths, eval_envsteps_this_batch = utils.sample_trajectories(self.env, eval_policy,
+                                                                         self.params['eval_batch_size'],
+                                                                         self.params['ep_len'])
 
         # save eval rollouts as videos in tensorboard event file
         if self.logvideo and train_video_paths != None:
-            print('\nCollecting video rollouts eval')
+            # print('\nCollecting video rollouts eval')
             eval_video_paths = utils.sample_n_trajectories(self.env, eval_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
 
             #save train/eval videos
-            print('\nSaving train rollouts as videos...')
-            self.logger.log_paths_as_videos(train_video_paths, itr, fps=self.fps, max_videos_to_save=MAX_NVIDEO,
+            # print('\nSaving train rollouts as videos...')
+            self.logger.log_paths_as_videos(train_video_paths,
+                                            itr,
+                                            fps=self.fps,
+                                            max_videos_to_save=MAX_NVIDEO,
                                             video_title='train_rollouts')
-            self.logger.log_paths_as_videos(eval_video_paths, itr, fps=self.fps,max_videos_to_save=MAX_NVIDEO,
-                                             video_title='eval_rollouts')
+            self.logger.log_paths_as_videos(eval_video_paths,
+                                            itr,
+                                            fps=self.fps,
+                                            max_videos_to_save=MAX_NVIDEO,
+                                            video_title='eval_rollouts')
 
         #######################
 
@@ -313,8 +340,8 @@ class RL_Trainer(object):
 
             # perform the logging
             for key, value in logs.items():
-                print('{} : {}'.format(key, value))
+                # print('{} : {}'.format(key, value))
                 self.logger.log_scalar(value, key, itr)
-            print('Done logging...\n\n')
+            # print('Done logging...\n\n')
 
             self.logger.flush()
