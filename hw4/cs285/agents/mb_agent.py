@@ -1,20 +1,24 @@
-from .base_agent import BaseAgent
-from cs285.models.ff_model import FFModel
-from cs285.policies.MPC_policy import MPCPolicy
+import typing as t
+
+import numpy as np
+
+from cs285.agents.base_agent import BaseAgent
 from cs285.infrastructure.replay_buffer import ReplayBuffer
 from cs285.infrastructure.utils import *
+from cs285.models.ff_model import FFModel
+from cs285.policies.MPC_policy import MPCPolicy
 
 
 class MBAgent(BaseAgent):
     def __init__(self, env, agent_params):
-        super(MBAgent, self).__init__()
+        super().__init__()
 
         self.env = env.unwrapped
         self.agent_params = agent_params
         self.ensemble_size = self.agent_params['ensemble_size']
 
-        self.dyn_models = []
-        for i in range(self.ensemble_size):
+        self.dyn_models : t.List[FFModel] = []
+        for _ in range(self.ensemble_size):
             model = FFModel(
                 self.agent_params['ac_dim'],
                 self.agent_params['ob_dim'],
@@ -51,14 +55,13 @@ class MBAgent(BaseAgent):
             # select which datapoints to use for this model of the ensemble
             # you might find the num_data_per_env variable defined above useful
 
-            observations = # TODO(Q1)
-            actions = # TODO(Q1)
-            next_observations = # TODO(Q1)
+            observations = ob_no[i * num_data_per_ens:(i + 1) * num_data_per_ens]
+            actions = ac_na[i * num_data_per_ens:(i + 1) * num_data_per_ens]
+            next_observations = next_ob_no[i * num_data_per_ens:(i + 1) * num_data_per_ens]
 
             # use datapoints to update one of the dyn_models
-            model =  # TODO(Q1)
-            log = model.update(observations, actions, next_observations,
-                                self.data_statistics)
+            model = self.dyn_models[i]
+            log = model.update(observations, actions, next_observations, self.data_statistics)
             loss = log['Training Loss']
             losses.append(loss)
 
@@ -78,10 +81,8 @@ class MBAgent(BaseAgent):
             'obs_std': np.std(self.replay_buffer.obs, axis=0),
             'acs_mean': np.mean(self.replay_buffer.acs, axis=0),
             'acs_std': np.std(self.replay_buffer.acs, axis=0),
-            'delta_mean': np.mean(
-                self.replay_buffer.next_obs - self.replay_buffer.obs, axis=0),
-            'delta_std': np.std(
-                self.replay_buffer.next_obs - self.replay_buffer.obs, axis=0),
+            'delta_mean': np.mean(self.replay_buffer.next_obs - self.replay_buffer.obs, axis=0),
+            'delta_std': np.std(self.replay_buffer.next_obs - self.replay_buffer.obs, axis=0),
         }
 
         # update the actor's data_statistics too, so actor.get_action can be calculated correctly
@@ -90,5 +91,4 @@ class MBAgent(BaseAgent):
     def sample(self, batch_size):
         # NOTE: sampling batch_size * ensemble_size,
         # so each model in our ensemble can get trained on batch_size data
-        return self.replay_buffer.sample_random_data(
-            batch_size * self.ensemble_size)
+        return self.replay_buffer.sample_random_data(batch_size * self.ensemble_size)

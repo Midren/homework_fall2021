@@ -1,0 +1,229 @@
+{
+  "configurations": {
+    "python-base": {
+      "adapter": "debugpy",
+      "configuration": {
+        "name": "Run",
+        "type": "python",
+        "request": "launch",
+        "cwd": "${workspaceRoot}",
+        "stopOnEntry": false,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "python": "venv/bin/python3",
+        "program": "${file}",
+        "args": []
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "raised": "N",
+          "uncaught": "Y",
+          "userUnhandled": ""
+        }
+      }
+    },
+    "Run this file": {
+      "extends": "python-base",
+      "configuration": {
+        "program": "${file}",
+        "args": []
+      }
+    },
+    "cheetah-base": {
+      "extends": "python-base",
+      "configuration": {
+        "program": "cs285/scripts/run_hw4_mb.py",
+        "args": [
+          "--exp_name=q1_cheetah_n${train_steps}_arch${n_layers}x${layer_size}",
+          "--env_name=cheetah-cs285-v0",
+          "--add_sl_noise",
+          "--n_iter=1",
+          "--batch_size_initial=20000",
+          "--num_agent_train_steps_per_iter=${train_steps}",
+          "--n_layers=${n_layers}",
+          "--size=${layer_size}",
+          "--scalar_log_freq=-1",
+          "--video_log_freq=-1",
+          "--mpc_action_sampling_strategy=random"
+        ]
+      }
+    },
+    "P1.1: Cheetah": {
+      "extends": "cheetah-base",
+      "variables": {
+        "n_layers": 1,
+        "train_steps": 500,
+        "layer_size": 32
+      }
+    },
+    "P1.2: Cheetah": {
+      "extends": "cheetah-base",
+      "variables": {
+        "n_layers": 2,
+        "train_steps": 5,
+        "layer_size": 250
+      }
+    },
+    "P1.3: Cheetah": {
+      "extends": "cheetah-base",
+      "variables": {
+        "n_layers": 2,
+        "train_steps": 500,
+        "layer_size": 250
+      }
+    },
+    "P2: Obstacles": {
+      "extends": "python-base",
+      "configuration": {
+        "program": "cs285/scripts/run_hw4_mb.py",
+        "args": [
+          "--exp_name=q2_obstacles_singleiteration",
+          "--env_name=obstacles-cs285-v0",
+          "--add_sl_noise",
+          "--num_agent_train_steps_per_iter=20",
+          "--n_iter=1",
+          "--batch_size_initial=5000",
+          "--batch_size=1000",
+          "--mpc_horizon=10",
+          "--mpc_action_sampling_strategy=random"
+        ]
+      }
+    },
+    "mbrl-base": {
+      "extends": "python-base",
+      "configuration": {
+        "program": "cs285/scripts/run_hw4_mb.py",
+        "args": [
+          "--exp_name=q3_${env_name}",
+          "--env_name=${env_name}-cs285-v0",
+          "--add_sl_noise",
+          "--num_agent_train_steps_per_iter=${train_steps}",
+          "--batch_size_initial=5000",
+          "--batch_size=${batch_size}",
+          "--mpc_horizon=${mpc_horizon}",
+          "--n_iter=${n_iter}",
+          "--mpc_action_sampling_strategy=random"
+        ]
+      }
+    },
+    "P3.1: Obstacles": {
+      "extends": "mbrl-base",
+      "variables": {
+        "env_name": "obstacles",
+        "mpc_horizon": 10,
+        "n_iter": 12,
+        "train_steps": 20,
+        "batch_size": 1000
+      }
+    },
+    "P3.2: Reacher": {
+      "extends": "mbrl-base",
+      "variables": {
+        "env_name": "reacher",
+        "mpc_horizon": 10,
+        "n_iter": 15,
+        "train_steps": 1000,
+        "batch_size": 5000
+      }
+    },
+    "P3.3: Cheetah": {
+      "extends": "mbrl-base",
+      "variables": {
+        "env_name": "cheetah",
+        "mpc_horizon": 15,
+        "n_iter": 20,
+        "train_steps": 1500,
+        "batch_size": 5000
+      }
+    },
+    "test-mbrl-base": {
+      "extends": "python-base",
+      "configuration": {
+        "program": "cs285/scripts/run_hw4_mb.py",
+        "args": [
+          "--exp_name=${exp_name}",
+          "--env_name=reacher-cs285-v0",
+          "--add_sl_noise",
+          "--mpc_horizon=5",
+          "--mpc_action_sampling_strategy=random",
+          "--num_agent_train_steps_per_iter=1000",
+          "--mpc_num_action_sequences=${candidates_num}",
+          "--batch_size=800",
+          "--n_iter=15",
+          "--mpc_action_sampling_strategy=random",
+          "--ensemble_size=${ensemble_size}"
+        ]
+      }
+    },
+    "P4.1: Horizon length test": {
+      "extends": "test-mbrl-base",
+      "variables": {
+        // 5, 15, 30 should be tested
+        "candidates_num": 1000,
+        "ensemble_size": 3,
+        "exp_name": "q4_reacher_horizon${mpc_horizon}"
+      }
+    },
+    "P4.2: Candidates num test": {
+      "extends": "test-mbrl-base",
+      "variables": {
+        "mpc_horizon": 15,
+        // 100, 1000 should be tested
+        "ensemble_size": 3,
+        "exp_name": "q4_reacher_numseq${candidates_num}"
+      }
+    },
+    "P4.3: Ensemble size test": {
+      "extends": "test-mbrl-base",
+      "variables": {
+        "mpc_horizon": 15,
+        "candidates_num": 1000,
+        // 1, 3, 5 should be tested
+        "exp_name": "q4_reacher_ensemble${ensemble_size}"
+      }
+    },
+    "cem-mbrl-base": {
+      "extends": "python-base",
+      "configuration": {
+        "program": "cs285/scripts/run_hw4_mb.py",
+        "args": [
+          "--exp_name=q5_cheetah_${name}",
+          "--env_name=cheetah-cs285-v0",
+          "--mpc_horizon=15",
+          "--add_sl_noise",
+          "--num_agent_train_steps_per_iter=1500",
+          "--batch_size_initial=5000",
+          "--batch_size=5000",
+          "--n_iter=5",
+          "--mpc_action_sampling_strategy=${sampling_strategy}",
+          "--cem_iterations=4"
+        ]
+      }
+    },
+    "P5.1: Random": {
+      "extends": "test-mbrl-base",
+      "variables": {
+        "sampling_strategy": "random",
+        "cem_iterations": 0,
+        "name": "random"
+      }
+    },
+    "P5.2: CEM 2": {
+      "extends": "test-mbrl-base",
+      "variables": {
+        "sampling_strategy": "cem",
+        "cem_iterations": 2,
+        "name": "cem_2"
+      }
+    },
+    "P5.3: CEM 4": {
+      "extends": "test-mbrl-base",
+      "variables": {
+        "sampling_strategy": "cem",
+        "cem_iterations": 4,
+        "name": "cem_4"
+      }
+    }
+  }
+}
