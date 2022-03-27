@@ -50,24 +50,30 @@ class MPCPolicy(BasePolicy):
             or (self.sample_strategy == 'cem' and obs is None):
             return np.random.uniform(self.low, self.high, size=(num_sequences, horizon, self.ac_dim))
         elif self.sample_strategy == 'cem':
-            # TODO(Q5): Implement action selection using CEM.
-            # Begin with randomly selected actions, then refine the sampling distribution
-            # iteratively as described in Section 3.3, "Iterative Random-Shooting with Refinement" of
-            # https://arxiv.org/pdf/1909.11652.pdf
-            for i in range(self.cem_iterations):
-                # - Sample candidate sequences from a Gaussian with the current
-                #   elite mean and variance
-                #     (Hint: remember that for the first iteration, we instead sample
-                #      uniformly at random just like we do for random-shooting)
-                # - Get the top `self.cem_num_elites` elites
-                #     (Hint: what existing function can we use to compute rewards for
-                #      our candidate sequences in order to rank them?)
-                # - Update the elite mean and variance
-                pass
+            mu = None
+            cov = None
 
-            # TODO(Q5): Set `cem_action` to the appropriate action sequence chosen by CEM.
-            # The shape should be (horizon, self.ac_dim)
-            cem_action = None
+            for _ in range(self.cem_iterations):
+                if mu is None or cov is None:
+                    possible_actions = np.random.uniform(self.low, self.high, size=(num_sequences, horizon, self.ac_dim))
+                else:
+                    possible_actions = np.random.multivariate_normal(mu, np.diagflat(cov), size=(num_sequences, horizon))
+
+                rewards = np.array([self.evaluate_candidate_sequences(action_seq, obs) for action_seq in possible_actions])
+                top_idx = np.argpartition(rewards, -self.cem_num_elites)[-self.cem_num_elites:]
+                a_elites = rewards[top_idx]
+
+                if mu is None or cov is None:
+                    mu = np.mean(a_elites, axis=0)
+                    cov = np.var(a_elites, axis=0)
+                else:
+                    mu = self.cem_alpha * np.mean(a_elites, axis=0) + (1 - self.cem_alpha) * mu
+                    cov = self.cem_alpha * np.var(a_elites, axis=0) + (1 - self.cem_alpha) * cov
+
+                assert mu.shape == (horizon, self.ac_dim)
+                assert cov.shape == (horizon, self.ac_dim)
+
+            cem_action = mu
 
             return cem_action[None]
         else:
